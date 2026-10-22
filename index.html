@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Telemetría Pro</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1C1C1E;
+            --modal-bg: #2C2C2E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #EBEBF599;
+            --accent-blue: #0A84FF;
+            --accent-red: #FF453A;
+            --accent-green: #32D74B;
+            --accent-orange: #FF9F0A;
+            --divider: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overscroll-behavior-y: none;
+            padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+        }
+
+        .header { text-align: center; padding: 20px 0 15px 0; }
+        .header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.5px; }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 24px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .kpi-main { margin-bottom: 24px; }
+        .kpi-main .label { font-size: 14px; color: var(--text-secondary); font-weight: 600; letter-spacing: 1px; margin-bottom: 4px; }
+        .kpi-main .value { font-size: 72px; font-weight: 700; letter-spacing: -2px; font-variant-numeric: tabular-nums; line-height: 1; color: var(--text-primary); }
+        .kpi-main .unit { font-size: 24px; font-weight: 500; color: var(--text-secondary); }
+
+        .kpi-sub-grid { display: flex; justify-content: center; gap: 40px; width: 100%; }
+        .kpi-sub { display: flex; flex-direction: column; align-items: center; }
+        .kpi-sub .label { font-size: 12px; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .kpi-sub .value { font-size: 32px; font-weight: 700; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+        .kpi-sub .value.peak { color: var(--accent-red); }
+        .kpi-sub .value.speed { color: var(--accent-green); }
+        .kpi-sub .unit { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .toggle-label { font-size: 16px; font-weight: 500; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 30px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #39393D; transition: .3s; border-radius: 30px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: var(--accent-green); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* --- BOTONES Y CONTROLES --- */
+        .button-group { display: flex; gap: 12px; margin-bottom: 16px; }
+        button {
+            flex: 1; background-color: var(--card-bg); color: var(--accent-blue);
+            border: none; border-radius: 12px; padding: 14px; font-size: 17px;
+            font-weight: 600; cursor: pointer; transition: opacity 0.2s, background-color 0.2s;
+        }
+        button:active { opacity: 0.7; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        button.primary { background-color: var(--accent-blue); color: white; }
+        button.secondary { background-color: #3A3A3C; color: white; }
+        
+        /* Botón de Grabación (Estados) */
+        button.play-btn { background-color: var(--accent-green); color: white; }
+        button.play-btn.zeroing { background-color: var(--accent-orange); color: white; }
+        button.play-btn.measuring { background-color: var(--accent-red); color: white; }
+
+        .canvas-container {
+            width: 100%;
+            height: 120px;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            border: 1px solid var(--divider);
+            margin-bottom: 16px;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .section-title { font-size: 13px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; margin: 20px 0 8px 8px; letter-spacing: 0.5px; }
+        .list-card { background-color: var(--card-bg); border-radius: 16px; overflow: hidden; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid var(--divider); }
+        .list-item:last-child { border-bottom: none; }
+        .test-info { display: flex; flex-direction: column; gap: 4px; }
+        .test-title { font-size: 17px; font-weight: 500; }
+        .test-peak { font-size: 13px; color: var(--text-secondary); }
+        .download-btn { background-color: rgba(10, 132, 255, 0.15); color: var(--accent-blue); font-size: 13px; padding: 6px 12px; border-radius: 16px; font-weight: 600; flex: none; }
+        #status-bar { text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 10px; font-weight: 500; }
+
+        /* --- MODAL CALIBRACIÓN iOS --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 100; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        
+        .modal-sheet {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background-color: var(--modal-bg);
+            border-radius: 20px 20px 0 0;
+            padding: 24px 20px env(safe-area-inset-bottom) 20px;
+            z-index: 101; transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1);
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
+        }
+        .modal-sheet.active { transform: translateY(0); }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 20px; font-weight: 600; }
+        .btn-close { background: none; color: var(--accent-blue); font-size: 17px; padding: 0; flex: none; }
+        
+        .sensor-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .sensor-box { background-color: #1C1C1E; border-radius: 12px; padding: 12px; text-align: center; }
+        .sensor-box .axis { font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px; }
+        .sensor-box .val { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Frenómetro Pro</h1>
+    </div>
+
+    <div class="card">
+        <div class="kpi-main">
+            <div class="label">DECELERACIÓN ACTUAL</div>
+            <div class="value" id="val-current">0.00 <span class="unit">m/s²</span></div>
+        </div>
+        
+        <div class="kpi-sub-grid">
+            <div class="kpi-sub">
+                <div class="label">PICO MÁXIMO</div>
+                <div class="value peak" id="val-peak">0.00 <span class="unit">m/s²</span></div>
+            </div>
+            
+            <div class="kpi-sub" id="v0-container" style="display: none;">
+                <div class="label">V. INICIAL ESTIMADA</div>
+                <div class="value speed" id="val-speed">0 <span class="unit">km/h</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toggle-row">
+        <span class="toggle-label">Estimar V. Inicial por Integración</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="toggle-speed">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="button-group">
+        <button id="btn-record" class="play-btn">▶ Iniciar Prueba</button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="graphCanvas"></canvas>
+    </div>
+
+    <div class="button-group">
+        <button id="btn-init" class="primary">Iniciar Sensores</button>
+        <button id="btn-open-cal" class="secondary" style="display:none;">🛠 Panel de Calibración</button>
+    </div>
+
+    <div class="section-title">Pruebas Guardadas (Max 3)</div>
+    <div class="list-card" id="tests-list">
+        <div class="list-item" style="justify-content: center; color: var(--text-secondary); font-size: 15px;" id="empty-state">
+            Ninguna prueba grabada.
+        </div>
+    </div>
+    
+    <div id="status-bar">Esperando inicio...</div>
+
+    <!-- MODAL CALIBRACIÓN Y DIAGNÓSTICO -->
+    <div class="modal-overlay" id="cal-overlay"></div>
+    <div class="modal-sheet" id="cal-sheet">
+        <div class="modal-header">
+            <div class="modal-title">Telemetría Raw</div>
+            <button class="btn-close" id="btn-close-cal">Cerrar</button>
+        </div>
+        
+        <div class="section-title" style="margin-left: 0; margin-top: 0;">Acelerómetro (m/s²)</div>
+        <div class="sensor-grid">
+            <div class="sensor-box"><div class="axis">Eje X</div><div class="val" id="raw-accel-x">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Eje Y</div><div class="val" id="raw-accel-y">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Eje Z</div><div class="val" id="raw-accel-z">0.00</div></div>
+        </div>
+
+        <div class="section-title" style="margin-left: 0;">Giroscopio (°/s)</div>
+        <div class="sensor-grid">
+            <div class="sensor-box"><div class="axis">Alpha</div><div class="val" id="raw-gyro-a">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Beta</div><div class="val" id="raw-gyro-b">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Gamma</div><div class="val" id="raw-gyro-g">0.00</div></div>
+        </div>
+
+        <button id="btn-do-cal" class="primary" style="width: 100%; margin-top: 10px;">Establecer 0 Manual (Tarar Eje Y)</button>
+    </div>
+
+<script>
+    // Variables de Estado y Física
+    let isRunning = false;
+    let isRecording = false;
+    let isZeroing = false;
+    let baselineY = 0; 
+    let isModalOpen = false;
+    
+    // Variables de Filtro y Cinemática
+    let filteredDecel = 0;
+    const alpha = 0.15; 
+    
+    let lastTime = 0;
+    let accumulatedSpeed_ms = 0; 
+
+    // Variables de Grabación
+    let sessionMaxPeak = 0;
+    let recordingStartTime = 0;
+    let currentRecord = { accel: [], gyro: [] };
+    let savedTests = [];
+
+    // Variables Gráficas (Canvas)
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    let dataHistory = new Array(100).fill(0);
+    let dpr = window.devicePixelRatio || 1;
+    
+    function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Elementos UI Main
+    const valCurrent = document.getElementById('val-current');
+    const valPeak = document.getElementById('val-peak');
+    const valSpeed = document.getElementById('val-speed');
+    const v0Container = document.getElementById('v0-container');
+    const toggleSpeed = document.getElementById('toggle-speed');
+    const statusBar = document.getElementById('status-bar');
+    const btnInit = document.getElementById('btn-init');
+    const btnOpenCal = document.getElementById('btn-open-cal');
+    const btnRecord = document.getElementById('btn-record');
+    const testsList = document.getElementById('tests-list');
+
+    // Elementos UI Modal
+    const calOverlay = document.getElementById('cal-overlay');
+    const calSheet = document.getElementById('cal-sheet');
+    const btnCloseCal = document.getElementById('btn-close-cal');
+    const btnDoCal = document.getElementById('btn-do-cal');
+    const domAccelX = document.getElementById('raw-accel-x');
+    const domAccelY = document.getElementById('raw-accel-y');
+    const domAccelZ = document.getElementById('raw-accel-z');
+    const domGyroA = document.getElementById('raw-gyro-a');
+    const domGyroB = document.getElementById('raw-gyro-b');
+    const domGyroG = document.getElementById('raw-gyro-g');
+
+    // Gestión Modal Calibración
+    btnOpenCal.addEventListener('click', () => {
+        isModalOpen = true;
+        calOverlay.classList.add('active');
+        calSheet.classList.add('active');
+    });
+
+    const closeModal = () => {
+        isModalOpen = false;
+        calOverlay.classList.remove('active');
+        calSheet.classList.remove('active');
+    };
+    btnCloseCal.addEventListener('click', closeModal);
+    calOverlay.addEventListener('click', closeModal);
+
+    // Toggle Mostrar/Ocultar Velocidad
+    toggleSpeed.addEventListener('change', (e) => {
+        v0Container.style.display = e.target.checked ? 'flex' : 'none';
+    });
+
+    // Inicialización
+    btnInit.addEventListener('click', async () => {
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission === 'granted') {
+                    startListening();
+                } else {
+                    statusBar.innerText = 'Permiso denegado.';
+                }
+            } catch (error) {
+                statusBar.innerText = 'Error de permisos.';
+            }
+        } else {
+            startListening();
+        }
+    });
+
+    function startListening() {
+        if (isRunning) return;
+        window.addEventListener('devicemotion', handleMotion, true);
+        isRunning = true;
+        btnInit.style.display = 'none';
+        btnOpenCal.style.display = 'block';
+        lastTime = Date.now();
+        statusBar.innerText = 'Sensores activos. Listo para iniciar prueba.';
+        drawGraph();
+    }
+
+    // Calibración Manual desde Panel
+    btnDoCal.addEventListener('click', () => {
+        baselineY = lastRawY;
+        filteredDecel = 0;
+        sessionMaxPeak = 0; 
+        accumulatedSpeed_ms = 0;
+        updateUI();
+        statusBar.innerText = 'Eje longitudinal tarado a 0 m/s².';
+        closeModal();
+    });
+
+    let lastRawY = 0;
+
+    // Procesamiento de Señal
+    function handleMotion(event) {
+        let currentTime = Date.now();
+        let dt = (currentTime - lastTime) / 1000; 
+        lastTime = currentTime;
+
+        let accel = event.acceleration || event.accelerationIncludingGravity;
+        if (!accel) return;
+
+        let ax = accel.x || 0;
+        let ay = accel.y || 0;
+        let az = accel.z || 0;
+        lastRawY = ay;
+
+        let gyro = event.rotationRate;
+        let ga = gyro ? (gyro.alpha || 0) : 0;
+        let gb = gyro ? (gyro.beta || 0) : 0;
+        let gg = gyro ? (gyro.gamma || 0) : 0;
+
+        if (isModalOpen) {
+            domAccelX.innerText = ax.toFixed(2);
+            domAccelY.innerText = ay.toFixed(2);
+            domAccelZ.innerText = az.toFixed(2);
+            domGyroA.innerText = ga.toFixed(1);
+            domGyroB.innerText = gb.toFixed(1);
+            domGyroG.innerText = gg.toFixed(1);
+        }
+        
+        // CÁLCULO DIRECTO EN m/s² (Sin dividir por 9.81)
+        let decelRaw_ms2 = ay - baselineY;
+        filteredDecel = alpha * decelRaw_ms2 + (1 - alpha) * filteredDecel;
+        
+        let absDecel = Math.abs(filteredDecel);
+        if (absDecel > sessionMaxPeak) sessionMaxPeak = absDecel;
+
+        if (isRecording) {
+            let t = currentTime - recordingStartTime;
+            // Noise Gate ajustado a m/s² (0.5 m/s² equivale aprox a 0.05 G)
+            if (absDecel > 0.5) { 
+                accumulatedSpeed_ms += absDecel * dt;
+            }
+            currentRecord.accel.push({ t: t, x: ax, y: ay, z: az });
+            if (gyro) currentRecord.gyro.push({ t: t, alpha: ga, beta: gb, gamma: gg });
+        }
+    }
+
+    // FLUJO DE GRABACIÓN
+    btnRecord.addEventListener('click', () => {
+        if (!isRunning) {
+            alert("Inicia los sensores primero antes de grabar.");
+            return;
+        }
+
+        if (!isRecording && !isZeroing) {
+            if (savedTests.length >= 3) {
+                alert("Memoria llena. Exporta o borra recargando la página.");
+                return;
+            }
+            
+            isZeroing = true;
+            btnRecord.innerText = '⏳ Haciendo cero...';
+            btnRecord.className = 'play-btn zeroing';
+            btnRecord.disabled = true;
+            statusBar.innerText = 'Tarando sensores de forma automática...';
+            statusBar.style.color = 'var(--accent-orange)';
+            
+            // Ejecutar calibración instantánea
+            baselineY = lastRawY;
+            filteredDecel = 0;
+            sessionMaxPeak = 0; 
+            accumulatedSpeed_ms = 0;
+            
+            // Esperar 1 segundo para mostrar el feedback y luego grabar
+            setTimeout(() => {
+                isZeroing = false;
+                isRecording = true;
+                recordingStartTime = Date.now();
+                currentRecord = { accel: [], gyro: [] };
+                
+                btnRecord.disabled = false;
+                btnRecord.innerText = '⬛ Detener (Midiendo)';
+                btnRecord.className = 'play-btn measuring';
+                
+                statusBar.innerText = '🔴 Midiendo... ¡Frena el vehículo!';
+                statusBar.style.color = 'var(--accent-red)';
+            }, 1000);
+
+        } else if (isRecording) {
+            isRecording = false;
+            btnRecord.innerText = '▶ Iniciar Prueba';
+            btnRecord.className = 'play-btn';
+            statusBar.innerText = 'Prueba finalizada y guardada.';
+            statusBar.style.color = 'var(--text-secondary)';
+            saveTest();
+        }
+    });
+
+    function saveTest() {
+        const test = {
+            id: savedTests.length + 1,
+            peak: sessionMaxPeak,
+            speed_kmh: accumulatedSpeed_ms * 3.6, 
+            data: currentRecord
+        };
+        savedTests.push(test);
+        renderTestsList();
+    }
+
+    function renderTestsList() {
+        testsList.innerHTML = '';
+        if (savedTests.length === 0) return;
+        savedTests.forEach((test, index) => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <div class="test-info">
+                    <span class="test-title">Prueba ${test.id}</span>
+                    <span class="test-peak">Pico: ${test.peak.toFixed(2)} m/s² | V. Ini: ${test.speed_kmh.toFixed(0)} km/h</span>
+                </div>
+                <button class="download-btn" onclick="exportData(${index})">Datos JSON</button>
+            `;
+            testsList.appendChild(div);
+        });
+    }
+
+    window.exportData = function(index) {
+        const blob = new Blob([JSON.stringify(savedTests[index].data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `telemetria_prueba_${savedTests[index].id}.json`;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // Motor Render
+    function updateUI() {
+        valCurrent.innerHTML = `${Math.abs(filteredDecel).toFixed(2)} <span class="unit">m/s²</span>`;
+        valPeak.innerHTML = `${sessionMaxPeak.toFixed(2)} <span class="unit">m/s²</span>`;
+        valSpeed.innerHTML = `${Math.round(accumulatedSpeed_ms * 3.6)} <span class="unit">km/h</span>`;
+        
+        dataHistory.shift();
+        dataHistory.push(Math.abs(filteredDecel));
+    }
+
+    function drawGraph() {
+        updateUI();
+        const w = canvas.width / dpr;
+        const h = canvas.height / dpr;
+        ctx.clearRect(0, 0, w, h);
+        
+        // ESCALA DEL CANVAS EN m/s² (12 m/s² = ~1.2 G)
+        const maxVal = 12.0;
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // Líneas horizontales cada 3 m/s²
+        for(let i = 0; i <= maxVal; i+=3) {
+            let y = h - (i / maxVal) * h;
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle = '#0A84FF';
+        
+        if (isZeroing) {
+            ctx.strokeStyle = '#FF9F0A'; // Naranja
+        } else if (isRecording) {
+            ctx.strokeStyle = '#FF453A'; // Rojo
+        }
+
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        
+        for (let i = 0; i < dataHistory.length; i++) {
+            let val = dataHistory[i];
+            let drawVal = val > maxVal ? maxVal : val;
+            let x = (i / (dataHistory.length - 1)) * w;
+            let y = h - (drawVal / maxVal) * h;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+        
+        let grad = ctx.createLinearGradient(0, 0, 0, h);
+        if (isZeroing) {
+            grad.addColorStop(0, 'rgba(255, 159, 10, 0.4)');
+            grad.addColorStop(1, 'rgba(255, 159, 10, 0.0)');
+        } else if (isRecording) {
+            grad.addColorStop(0, 'rgba(255, 69, 58, 0.4)');
+            grad.addColorStop(1, 'rgba(255, 69, 58, 0.0)');
+        } else {
+            grad.addColorStop(0, 'rgba(10, 132, 255, 0.4)');
+            grad.addColorStop(1, 'rgba(10, 132, 255, 0.0)');
+        }
+        
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        requestAnimationFrame(drawGraph);
+    }
+</script>
+</body>
+</html>
