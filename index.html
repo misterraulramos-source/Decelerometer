@@ -93,7 +93,6 @@
         button.primary { background-color: var(--accent-blue); color: white; }
         button.secondary { background-color: #3A3A3C; color: white; }
         
-        /* Botón de Grabación (Estados) */
         button.play-btn { background-color: var(--accent-green); color: white; }
         button.play-btn.zeroing { background-color: var(--accent-orange); color: white; }
         button.play-btn.measuring { background-color: var(--accent-red); color: white; }
@@ -139,6 +138,8 @@
             z-index: 101; transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1);
             box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
+            /* Para que haga scroll si la pantalla es muy pequeña */
+            max-height: 90vh; overflow-y: auto;
         }
         .modal-sheet.active { transform: translateY(0); }
         
@@ -146,7 +147,7 @@
         .modal-title { font-size: 20px; font-weight: 600; }
         .btn-close { background: none; color: var(--accent-blue); font-size: 17px; padding: 0; flex: none; }
         
-        .sensor-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .sensor-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
         .sensor-box { background-color: #1C1C1E; border-radius: 12px; padding: 12px; text-align: center; }
         .sensor-box .axis { font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px; }
         .sensor-box .val { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -217,43 +218,46 @@
         
         <div class="section-title" style="margin-left: 0; margin-top: 0;">Acelerómetro (m/s²)</div>
         <div class="sensor-grid">
-            <div class="sensor-box"><div class="axis">Eje X</div><div class="val" id="raw-accel-x">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Eje Y</div><div class="val" id="raw-accel-y">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Eje Z</div><div class="val" id="raw-accel-z">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Eje X (Lat)</div><div class="val" id="raw-accel-x">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Eje Y (Long)</div><div class="val" id="raw-accel-y">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Eje Z (Vert)</div><div class="val" id="raw-accel-z">0.00</div></div>
         </div>
 
         <div class="section-title" style="margin-left: 0;">Giroscopio (°/s)</div>
         <div class="sensor-grid">
-            <div class="sensor-box"><div class="axis">Alpha</div><div class="val" id="raw-gyro-a">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Beta</div><div class="val" id="raw-gyro-b">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Gamma</div><div class="val" id="raw-gyro-g">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Rot X (Beta)</div><div class="val" id="raw-gyro-b">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Rot Y (Gamma)</div><div class="val" id="raw-gyro-g">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Rot Z (Alpha)</div><div class="val" id="raw-gyro-a">0.00</div></div>
+        </div>
+
+        <div class="section-title" style="margin-left: 0;">Orientación Absoluta (°)</div>
+        <div class="sensor-grid">
+            <div class="sensor-box"><div class="axis">Pitch (Cabeceo)</div><div class="val" id="raw-orient-b">0.0</div></div>
+            <div class="sensor-box"><div class="axis">Roll (Alabeo)</div><div class="val" id="raw-orient-g">0.0</div></div>
+            <div class="sensor-box"><div class="axis">Yaw (Guiñada)</div><div class="val" id="raw-orient-a">0.0</div></div>
         </div>
 
         <button id="btn-do-cal" class="primary" style="width: 100%; margin-top: 10px;">Establecer 0 Manual (Tarar Eje Y)</button>
     </div>
 
 <script>
-    // Variables de Estado y Física
     let isRunning = false;
     let isRecording = false;
     let isZeroing = false;
     let baselineY = 0; 
     let isModalOpen = false;
     
-    // Variables de Filtro y Cinemática
     let filteredDecel = 0;
-    const alpha = 0.15; 
+    const alphaFilter = 0.15; 
     
     let lastTime = 0;
     let accumulatedSpeed_ms = 0; 
 
-    // Variables de Grabación
     let sessionMaxPeak = 0;
     let recordingStartTime = 0;
-    let currentRecord = { accel: [], gyro: [] };
+    let currentRecord = { accel: [], gyro: [], orient: [] };
     let savedTests = [];
 
-    // Variables Gráficas (Canvas)
     const canvas = document.getElementById('graphCanvas');
     const ctx = canvas.getContext('2d');
     let dataHistory = new Array(100).fill(0);
@@ -268,7 +272,6 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Elementos UI Main
     const valCurrent = document.getElementById('val-current');
     const valPeak = document.getElementById('val-peak');
     const valSpeed = document.getElementById('val-speed');
@@ -280,19 +283,21 @@
     const btnRecord = document.getElementById('btn-record');
     const testsList = document.getElementById('tests-list');
 
-    // Elementos UI Modal
     const calOverlay = document.getElementById('cal-overlay');
     const calSheet = document.getElementById('cal-sheet');
     const btnCloseCal = document.getElementById('btn-close-cal');
     const btnDoCal = document.getElementById('btn-do-cal');
+    
     const domAccelX = document.getElementById('raw-accel-x');
     const domAccelY = document.getElementById('raw-accel-y');
     const domAccelZ = document.getElementById('raw-accel-z');
     const domGyroA = document.getElementById('raw-gyro-a');
     const domGyroB = document.getElementById('raw-gyro-b');
     const domGyroG = document.getElementById('raw-gyro-g');
+    const domOrientA = document.getElementById('raw-orient-a');
+    const domOrientB = document.getElementById('raw-orient-b');
+    const domOrientG = document.getElementById('raw-orient-g');
 
-    // Gestión Modal Calibración
     btnOpenCal.addEventListener('click', () => {
         isModalOpen = true;
         calOverlay.classList.add('active');
@@ -307,32 +312,38 @@
     btnCloseCal.addEventListener('click', closeModal);
     calOverlay.addEventListener('click', closeModal);
 
-    // Toggle Mostrar/Ocultar Velocidad
     toggleSpeed.addEventListener('change', (e) => {
         v0Container.style.display = e.target.checked ? 'flex' : 'none';
     });
 
-    // Inicialización
+    // Permisos y Sensores (DeviceOrientation añadido)
     btnInit.addEventListener('click', async () => {
+        let permissionsGranted = true;
+        
+        // Petición para iOS 13+
         if (typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
-                const permission = await DeviceMotionEvent.requestPermission();
-                if (permission === 'granted') {
-                    startListening();
-                } else {
-                    statusBar.innerText = 'Permiso denegado.';
+                const motionPerm = await DeviceMotionEvent.requestPermission();
+                const orientPerm = await DeviceOrientationEvent.requestPermission();
+                if (motionPerm !== 'granted' || orientPerm !== 'granted') {
+                    permissionsGranted = false;
                 }
             } catch (error) {
-                statusBar.innerText = 'Error de permisos.';
+                permissionsGranted = false;
             }
-        } else {
+        }
+
+        if (permissionsGranted) {
             startListening();
+        } else {
+            statusBar.innerText = 'Permisos denegados o se requiere HTTPS.';
         }
     });
 
     function startListening() {
         if (isRunning) return;
         window.addEventListener('devicemotion', handleMotion, true);
+        window.addEventListener('deviceorientation', handleOrientation, true);
         isRunning = true;
         btnInit.style.display = 'none';
         btnOpenCal.style.display = 'block';
@@ -341,7 +352,6 @@
         drawGraph();
     }
 
-    // Calibración Manual desde Panel
     btnDoCal.addEventListener('click', () => {
         baselineY = lastRawY;
         filteredDecel = 0;
@@ -353,8 +363,26 @@
     });
 
     let lastRawY = 0;
+    
+    // VARIABLES GLOBALES PARA GUARDAR ORIENTACIÓN EN JSON
+    let lastOrientA = 0;
+    let lastOrientB = 0;
+    let lastOrientG = 0;
 
-    // Procesamiento de Señal
+    // EVENTO 1: Orientación Absoluta en Grados (°)
+    function handleOrientation(event) {
+        lastOrientA = event.alpha || 0; // Yaw (Rotación Z)
+        lastOrientB = event.beta || 0;  // Pitch (Cabeceo X)
+        lastOrientG = event.gamma || 0; // Roll (Alabeo Y)
+
+        if (isModalOpen) {
+            domOrientA.innerText = lastOrientA.toFixed(1);
+            domOrientB.innerText = lastOrientB.toFixed(1);
+            domOrientG.innerText = lastOrientG.toFixed(1);
+        }
+    }
+
+    // EVENTO 2: Cinemática en m/s² y Velocidad Angular en °/s
     function handleMotion(event) {
         let currentTime = Date.now();
         let dt = (currentTime - lastTime) / 1000; 
@@ -382,36 +410,30 @@
             domGyroG.innerText = gg.toFixed(1);
         }
         
-        // CÁLCULO DIRECTO EN m/s² (Sin dividir por 9.81)
         let decelRaw_ms2 = ay - baselineY;
-        filteredDecel = alpha * decelRaw_ms2 + (1 - alpha) * filteredDecel;
+        filteredDecel = alphaFilter * decelRaw_ms2 + (1 - alphaFilter) * filteredDecel;
         
         let absDecel = Math.abs(filteredDecel);
         if (absDecel > sessionMaxPeak) sessionMaxPeak = absDecel;
 
         if (isRecording) {
             let t = currentTime - recordingStartTime;
-            // Noise Gate ajustado a m/s² (0.5 m/s² equivale aprox a 0.05 G)
             if (absDecel > 0.5) { 
                 accumulatedSpeed_ms += absDecel * dt;
             }
+            
             currentRecord.accel.push({ t: t, x: ax, y: ay, z: az });
             if (gyro) currentRecord.gyro.push({ t: t, alpha: ga, beta: gb, gamma: gg });
+            // Guardamos también los grados absolutos de pitch/roll/yaw
+            currentRecord.orient.push({ t: t, alpha: lastOrientA, beta: lastOrientB, gamma: lastOrientG });
         }
     }
 
-    // FLUJO DE GRABACIÓN
     btnRecord.addEventListener('click', () => {
-        if (!isRunning) {
-            alert("Inicia los sensores primero antes de grabar.");
-            return;
-        }
+        if (!isRunning) { alert("Inicia los sensores primero."); return; }
 
         if (!isRecording && !isZeroing) {
-            if (savedTests.length >= 3) {
-                alert("Memoria llena. Exporta o borra recargando la página.");
-                return;
-            }
+            if (savedTests.length >= 3) { alert("Memoria llena."); return; }
             
             isZeroing = true;
             btnRecord.innerText = '⏳ Haciendo cero...';
@@ -420,18 +442,16 @@
             statusBar.innerText = 'Tarando sensores de forma automática...';
             statusBar.style.color = 'var(--accent-orange)';
             
-            // Ejecutar calibración instantánea
             baselineY = lastRawY;
             filteredDecel = 0;
             sessionMaxPeak = 0; 
             accumulatedSpeed_ms = 0;
             
-            // Esperar 1 segundo para mostrar el feedback y luego grabar
             setTimeout(() => {
                 isZeroing = false;
                 isRecording = true;
                 recordingStartTime = Date.now();
-                currentRecord = { accel: [], gyro: [] };
+                currentRecord = { accel: [], gyro: [], orient: [] };
                 
                 btnRecord.disabled = false;
                 btnRecord.innerText = '⬛ Detener (Midiendo)';
@@ -490,7 +510,6 @@
         URL.revokeObjectURL(url);
     };
 
-    // Motor Render
     function updateUI() {
         valCurrent.innerHTML = `${Math.abs(filteredDecel).toFixed(2)} <span class="unit">m/s²</span>`;
         valPeak.innerHTML = `${sessionMaxPeak.toFixed(2)} <span class="unit">m/s²</span>`;
@@ -506,12 +525,10 @@
         const h = canvas.height / dpr;
         ctx.clearRect(0, 0, w, h);
         
-        // ESCALA DEL CANVAS EN m/s² (12 m/s² = ~1.2 G)
         const maxVal = 12.0;
         ctx.strokeStyle = 'rgba(255,255,255,0.1)';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        // Líneas horizontales cada 3 m/s²
         for(let i = 0; i <= maxVal; i+=3) {
             let y = h - (i / maxVal) * h;
             ctx.moveTo(0, y);
@@ -520,14 +537,7 @@
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.strokeStyle = '#0A84FF';
-        
-        if (isZeroing) {
-            ctx.strokeStyle = '#FF9F0A'; // Naranja
-        } else if (isRecording) {
-            ctx.strokeStyle = '#FF453A'; // Rojo
-        }
-
+        ctx.strokeStyle = isZeroing ? '#FF9F0A' : (isRecording ? '#FF453A' : '#0A84FF');
         ctx.lineWidth = 3;
         ctx.lineJoin = 'round';
         
