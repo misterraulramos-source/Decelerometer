@@ -27,7 +27,7 @@
         .header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.5px; }
 
         .card { background-color: var(--card-bg); border-radius: 20px; padding: 24px 16px; margin-bottom: 16px; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .kpi-main { margin-bottom: 24px; }
+        .kpi-main { margin-bottom: 24px; width: 100%; text-align: center; }
         .kpi-main .label { font-size: 14px; color: var(--text-secondary); font-weight: 600; letter-spacing: 1px; margin-bottom: 4px; }
         .kpi-main .value { font-size: 72px; font-weight: 700; letter-spacing: -2px; font-variant-numeric: tabular-nums; line-height: 1; color: var(--text-primary); }
         .kpi-main .unit { font-size: 24px; font-weight: 500; color: var(--text-secondary); }
@@ -84,6 +84,11 @@
         .sensor-box { background-color: #1C1C1E; border-radius: 12px; padding: 12px; text-align: center; }
         .sensor-box .axis { font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px; }
         .sensor-box .val { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+        
+        .changelog-content { text-align:left; font-size:14px; color:var(--text-secondary); max-height: 50vh; overflow-y:auto; margin-bottom:20px; line-height: 1.6; background: #1C1C1E; padding: 16px; border-radius: 12px;}
+        .changelog-content p { margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;}
+        .changelog-content p:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
+        .changelog-content strong { color: var(--accent-blue); }
     </style>
 </head>
 <body>
@@ -142,41 +147,95 @@
     <!-- MODAL CALIBRACIÓN Y DIAGNÓSTICO -->
     <div class="modal-overlay" id="cal-overlay"></div>
     <div class="modal-sheet" id="cal-sheet">
-        <div class="modal-header">
-            <div class="modal-title">Telemetría RAW (Verificación)</div>
-            <button class="btn-close" id="btn-close-cal">Cerrar</button>
-        </div>
         
-        <!-- NUEVO BLOQUE: GRAVEDAD PURA PARA EL TEST DE LA PARED -->
-        <div class="section-title" style="margin-left: 0; margin-top: 0; color: var(--accent-orange);">1. Gravedad / Absoluto (m/s²)</div>
-        <div class="sensor-grid">
-            <div class="sensor-box"><div class="axis">Eje X (Lat)</div><div class="val" id="raw-grav-x">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Eje Y (Long)</div><div class="val" id="raw-grav-y">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Eje Z (Vert)</div><div class="val" id="raw-grav-z">0.00</div></div>
+        <!-- VISTA 1: DIAGNÓSTICO PRINCIPAL (RAW) -->
+        <div id="view-diag-main">
+            <div class="modal-header">
+                <div class="modal-title">Telemetría RAW</div>
+                <button class="btn-close" id="btn-close-cal">Cerrar</button>
+            </div>
+            
+            <div class="section-title" style="margin-left: 0; margin-top: 0; color: var(--accent-orange);">1. Gravedad / Absoluto (m/s²)</div>
+            <div class="sensor-grid">
+                <div class="sensor-box"><div class="axis">Eje X (Lat)</div><div class="val" id="raw-grav-x">0.00</div></div>
+                <div class="sensor-box"><div class="axis">Eje Y (Long)</div><div class="val" id="raw-grav-y">0.00</div></div>
+                <div class="sensor-box"><div class="axis">Eje Z (Vert)</div><div class="val" id="raw-grav-z">0.00</div></div>
+            </div>
+
+            <div class="section-title" style="margin-left: 0;">2. Acel. Lineal Pura (m/s²)</div>
+            <div class="sensor-grid">
+                <div class="sensor-box"><div class="axis">Eje X (Lat)</div><div class="val" id="raw-accel-x">0.00</div></div>
+                <div class="sensor-box"><div class="axis">Eje Y (Long)</div><div class="val" id="raw-accel-y">0.00</div></div>
+                <div class="sensor-box"><div class="axis">Eje Z (Vert)</div><div class="val" id="raw-accel-z">0.00</div></div>
+            </div>
+
+            <div class="section-title" style="margin-left: 0;">3. Giroscopio (°/s)</div>
+            <div class="sensor-grid">
+                <div class="sensor-box"><div class="axis">Rot X (Beta)</div><div class="val" id="raw-gyro-b">0.00</div></div>
+                <div class="sensor-box"><div class="axis">Rot Y (Gamma)</div><div class="val" id="raw-gyro-g">0.00</div></div>
+                <div class="sensor-box"><div class="axis">Rot Z (Alpha)</div><div class="val" id="raw-gyro-a">0.00</div></div>
+            </div>
+
+            <div class="section-title" style="margin-left: 0;">4. Orientación (°)</div>
+            <div class="sensor-grid">
+                <div class="sensor-box"><div class="axis">Pitch (Cabeceo)</div><div class="val" id="raw-orient-b">0.0</div></div>
+                <div class="sensor-box"><div class="axis">Roll (Alabeo)</div><div class="val" id="raw-orient-g">0.0</div></div>
+                <div class="sensor-box"><div class="axis">Yaw (Guiñada)</div><div class="val" id="raw-orient-a">0.0</div></div>
+            </div>
+
+            <div class="button-group" style="margin-top: 15px; margin-bottom: 0;">
+                <button id="btn-view-incl" class="secondary">📏 Modo Inclinómetro</button>
+                <button id="btn-view-change" class="secondary">📋 Changelog</button>
+            </div>
+            <button id="btn-do-cal" class="primary" style="width: 100%; margin-top: 12px;">Forzar Cero Manual (Plano X-Y)</button>
         </div>
 
-        <div class="section-title" style="margin-left: 0;">2. Acel. Lineal Pura (m/s²)</div>
-        <div class="sensor-grid">
-            <div class="sensor-box"><div class="axis">Eje X (Lat)</div><div class="val" id="raw-accel-x">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Eje Y (Long)</div><div class="val" id="raw-accel-y">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Eje Z (Vert)</div><div class="val" id="raw-accel-z">0.00</div></div>
+        <!-- VISTA 2: MODO INCLINÓMETRO (CALIBRACIÓN FÍSICA) -->
+        <div id="view-diag-incl" style="display: none;">
+            <div class="modal-header">
+                <div class="modal-title">Calibración Hardware</div>
+                <button class="btn-close" id="btn-close-incl">Volver</button>
+            </div>
+            
+            <div class="card" style="background-color: transparent; border: 1px solid var(--divider);">
+                <div class="kpi-main">
+                    <div class="label" style="color: var(--accent-orange);">PITCH (CABECEO)</div>
+                    <div class="value" id="incl-pitch">0.0 <span class="unit">°</span></div>
+                </div>
+                
+                <div style="width: 50px; height: 1px; background: var(--divider); margin: 10px 0 30px 0;"></div>
+                
+                <div class="kpi-main" style="margin-bottom: 0;">
+                    <div class="label" style="color: var(--accent-blue);">GRAVEDAD EJE Y</div>
+                    <div class="value" id="incl-grav">0.00 <span class="unit">m/s²</span></div>
+                </div>
+            </div>
+            
+            <button id="btn-back-incl" class="secondary" style="width: 100%;">Volver al menú</button>
         </div>
 
-        <div class="section-title" style="margin-left: 0;">3. Giroscopio (°/s)</div>
-        <div class="sensor-grid">
-            <div class="sensor-box"><div class="axis">Rot X (Beta)</div><div class="val" id="raw-gyro-b">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Rot Y (Gamma)</div><div class="val" id="raw-gyro-g">0.00</div></div>
-            <div class="sensor-box"><div class="axis">Rot Z (Alpha)</div><div class="val" id="raw-gyro-a">0.00</div></div>
+        <!-- VISTA 3: CHANGELOG -->
+        <div id="view-diag-change" style="display: none;">
+            <div class="modal-header">
+                <div class="modal-title">Historial de Versiones</div>
+                <button class="btn-close" id="btn-close-change">Volver</button>
+            </div>
+            
+            <div class="changelog-content">
+                <p><strong>v1.8:</strong> Bloqueo por Password (1080), Modo Inclinómetro KPI, persistencia de Cero manual y vista de Changelog.</p>
+                <p><strong>v1.7:</strong> Nuevo motor físico omnidireccional bidimensional (Pitágoras en 2D) para ignorar desalineación del soporte del coche.</p>
+                <p><strong>v1.6:</strong> Actualización al SI (m/s²). Desacoplamiento e integración de DeviceOrientation (Euler absoluto) y Test 1G de hardware.</p>
+                <p><strong>v1.5:</strong> Flujo estricto de medición: Secuencia automática Zeroing (Naranja) -> Recording (Rojo) -> Stop.</p>
+                <p><strong>v1.4:</strong> Grabadora de memoria volátil. Exportación de Arrays sincronizados (T, Aceleración, Giroscopio) en crudo vía Blob JSON.</p>
+                <p><strong>v1.3:</strong> Integrador numérico de Riemann para estimación cinemática de Velocidad Inicial (km/h) mediante cálculo de área bajo la curva. Inserción de KPIs centrales estilo iOS.</p>
+                <p><strong>v1.2:</strong> Reescritura pura de CSS (UI Native iOS, Squircles, Dark Mode, San Francisco Font).</p>
+                <p><strong>v1.1:</strong> Panel modal de Telemetría Raw.</p>
+                <p><strong>v1.0:</strong> Captura de Eventos DeviceMotion, Filtro Paso Bajo (Exponential Moving Average) e inicialización de Canvas gráfico a 60 FPS.</p>
+            </div>
+            
+            <button id="btn-back-change" class="secondary" style="width: 100%;">Volver al menú</button>
         </div>
 
-        <div class="section-title" style="margin-left: 0;">4. Orientación (°)</div>
-        <div class="sensor-grid">
-            <div class="sensor-box"><div class="axis">Pitch (Cabeceo)</div><div class="val" id="raw-orient-b">0.0</div></div>
-            <div class="sensor-box"><div class="axis">Roll (Alabeo)</div><div class="val" id="raw-orient-g">0.0</div></div>
-            <div class="sensor-box"><div class="axis">Yaw (Guiñada)</div><div class="val" id="raw-orient-a">0.0</div></div>
-        </div>
-
-        <button id="btn-do-cal" class="primary" style="width: 100%; margin-top: 10px;">Forzar Cero Manual (Plano X-Y)</button>
     </div>
 
 <script>
@@ -224,12 +283,17 @@
     const btnRecord = document.getElementById('btn-record');
     const testsList = document.getElementById('tests-list');
 
+    // DOM Modal Main
     const calOverlay = document.getElementById('cal-overlay');
     const calSheet = document.getElementById('cal-sheet');
-    const btnCloseCal = document.getElementById('btn-close-cal');
     const btnDoCal = document.getElementById('btn-do-cal');
     
-    // Referencias DOM Modal
+    // Referencias Vistas Modal
+    const viewDiagMain = document.getElementById('view-diag-main');
+    const viewDiagIncl = document.getElementById('view-diag-incl');
+    const viewDiagChange = document.getElementById('view-diag-change');
+
+    // Referencias DOM Sensores RAW
     const domGravX = document.getElementById('raw-grav-x');
     const domGravY = document.getElementById('raw-grav-y');
     const domGravZ = document.getElementById('raw-grav-z');
@@ -243,10 +307,25 @@
     const domOrientB = document.getElementById('raw-orient-b');
     const domOrientG = document.getElementById('raw-orient-g');
 
+    // Referencias DOM Inclinómetro
+    const domInclPitch = document.getElementById('incl-pitch');
+    const domInclGrav = document.getElementById('incl-grav');
+
+    // LÓGICA DE APERTURA (CON CONTRASEÑA)
     btnOpenCal.addEventListener('click', () => {
-        isModalOpen = true;
-        calOverlay.classList.add('active');
-        calSheet.classList.add('active');
+        const pass = prompt("Acceso Restringido.\nIntroduce código de técnico:");
+        if (pass === "1080") {
+            isModalOpen = true;
+            calOverlay.classList.add('active');
+            calSheet.classList.add('active');
+            
+            // Resetear a vista principal siempre al abrir
+            viewDiagMain.style.display = 'block';
+            viewDiagIncl.style.display = 'none';
+            viewDiagChange.style.display = 'none';
+        } else if (pass !== null) {
+            alert("Código incorrecto.");
+        }
     });
 
     const closeModal = () => {
@@ -254,8 +333,31 @@
         calOverlay.classList.remove('active');
         calSheet.classList.remove('active');
     };
-    btnCloseCal.addEventListener('click', closeModal);
+    
+    // Cierres
+    document.getElementById('btn-close-cal').addEventListener('click', closeModal);
     calOverlay.addEventListener('click', closeModal);
+
+    // NAVEGACIÓN DENTRO DEL MODAL
+    document.getElementById('btn-view-incl').addEventListener('click', () => {
+        viewDiagMain.style.display = 'none';
+        viewDiagIncl.style.display = 'block';
+    });
+    document.getElementById('btn-view-change').addEventListener('click', () => {
+        viewDiagMain.style.display = 'none';
+        viewDiagChange.style.display = 'block';
+    });
+
+    const goBackToDiagMain = () => {
+        viewDiagIncl.style.display = 'none';
+        viewDiagChange.style.display = 'none';
+        viewDiagMain.style.display = 'block';
+    };
+    document.getElementById('btn-close-incl').addEventListener('click', goBackToDiagMain);
+    document.getElementById('btn-back-incl').addEventListener('click', goBackToDiagMain);
+    document.getElementById('btn-close-change').addEventListener('click', goBackToDiagMain);
+    document.getElementById('btn-back-change').addEventListener('click', goBackToDiagMain);
+
 
     toggleSpeed.addEventListener('change', (e) => {
         v0Container.style.display = e.target.checked ? 'flex' : 'none';
@@ -295,6 +397,7 @@
         drawGraph();
     }
 
+    // FORZAR CERO MANUAL (AHORA SIN CERRAR EL MODAL)
     btnDoCal.addEventListener('click', () => {
         baselineX = lastRawX;
         baselineY = lastRawY;
@@ -302,8 +405,18 @@
         sessionMaxPeak = 0; 
         accumulatedSpeed_ms = 0;
         updateUI();
+        
+        // Feedback visual en el propio botón
+        const originalText = btnDoCal.innerText;
+        btnDoCal.innerText = "¡Cero Aplicado!";
+        btnDoCal.style.backgroundColor = "var(--accent-green)";
+        
         statusBar.innerText = 'Plano horizontal X-Y tarado a 0 m/s².';
-        closeModal();
+        
+        setTimeout(() => {
+            btnDoCal.innerText = originalText;
+            btnDoCal.style.backgroundColor = "var(--accent-blue)";
+        }, 1500);
     });
 
     let lastRawX = 0;
@@ -315,13 +428,17 @@
 
     function handleOrientation(event) {
         lastOrientA = event.alpha || 0; 
-        lastOrientB = event.beta || 0;  
+        lastOrientB = event.beta || 0;  // PITCH
         lastOrientG = event.gamma || 0; 
 
         if (isModalOpen) {
+            // Actializar RAW General
             domOrientA.innerText = lastOrientA.toFixed(1);
             domOrientB.innerText = lastOrientB.toFixed(1);
             domOrientG.innerText = lastOrientG.toFixed(1);
+            
+            // Actualizar Vista Inclinómetro Específica
+            domInclPitch.innerHTML = `${lastOrientB.toFixed(1)} <span class="unit">°</span>`;
         }
     }
 
@@ -330,7 +447,6 @@
         let dt = (currentTime - lastTime) / 1000; 
         lastTime = currentTime;
 
-        // 1. Aceleración Pura (Para los cálculos de frenada)
         let accel = event.acceleration || {x:0, y:0, z:0};
         let ax = accel.x || 0;
         let ay = accel.y || 0;
@@ -338,10 +454,9 @@
         lastRawX = ax;
         lastRawY = ay;
 
-        // 2. Aceleración con Gravedad (Exclusivo para el Test de Verificación)
         let grav = event.accelerationIncludingGravity || {x:0, y:0, z:0};
         let gx = grav.x || 0;
-        let gy = grav.y || 0;
+        let gy = grav.y || 0; // GRAVEDAD EJE Y
         let gz = grav.z || 0;
 
         let gyro = event.rotationRate;
@@ -350,20 +465,20 @@
         let gg = gyro ? (gyro.gamma || 0) : 0;
 
         if (isModalOpen) {
-            // Actualizamos Gravedad
             domGravX.innerText = gx.toFixed(2);
             domGravY.innerText = gy.toFixed(2);
             domGravZ.innerText = gz.toFixed(2);
             
-            // Actualizamos Lineal
             domAccelX.innerText = ax.toFixed(2);
             domAccelY.innerText = ay.toFixed(2);
             domAccelZ.innerText = az.toFixed(2);
             
-            // Actualizamos Giroscopio
             domGyroA.innerText = ga.toFixed(1);
             domGyroB.innerText = gb.toFixed(1);
             domGyroG.innerText = gg.toFixed(1);
+            
+            // Actualizar Vista Inclinómetro Específica
+            domInclGrav.innerHTML = `${gy.toFixed(2)} <span class="unit">m/s²</span>`;
         }
         
         let cx = ax - baselineX;
