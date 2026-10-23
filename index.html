@@ -20,36 +20,13 @@
             --divider: rgba(255, 255, 255, 0.15);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            overscroll-behavior-y: none;
-            padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-user-select: none; user-select: none; }
+        body { background-color: var(--bg-color); color: var(--text-primary); overscroll-behavior-y: none; padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px; }
+        
         .header { text-align: center; padding: 20px 0 15px 0; }
         .header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.5px; }
 
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 20px;
-            padding: 24px 16px;
-            margin-bottom: 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-
+        .card { background-color: var(--card-bg); border-radius: 20px; padding: 24px 16px; margin-bottom: 16px; display: flex; flex-direction: column; align-items: center; text-align: center; }
         .kpi-main { margin-bottom: 24px; }
         .kpi-main .label { font-size: 14px; color: var(--text-secondary); font-weight: 600; letter-spacing: 1px; margin-bottom: 4px; }
         .kpi-main .value { font-size: 72px; font-weight: 700; letter-spacing: -2px; font-variant-numeric: tabular-nums; line-height: 1; color: var(--text-primary); }
@@ -63,15 +40,7 @@
         .kpi-sub .value.speed { color: var(--accent-green); }
         .kpi-sub .unit { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
 
-        .toggle-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--card-bg);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; background-color: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 16px; }
         .toggle-label { font-size: 16px; font-weight: 500; }
         .toggle-switch { position: relative; display: inline-block; width: 50px; height: 30px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
@@ -80,33 +49,17 @@
         input:checked + .slider { background-color: var(--accent-green); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* --- BOTONES Y CONTROLES --- */
         .button-group { display: flex; gap: 12px; margin-bottom: 16px; }
-        button {
-            flex: 1; background-color: var(--card-bg); color: var(--accent-blue);
-            border: none; border-radius: 12px; padding: 14px; font-size: 17px;
-            font-weight: 600; cursor: pointer; transition: opacity 0.2s, background-color 0.2s;
-        }
+        button { flex: 1; background-color: var(--card-bg); color: var(--accent-blue); border: none; border-radius: 12px; padding: 14px; font-size: 17px; font-weight: 600; cursor: pointer; transition: opacity 0.2s, background-color 0.2s; }
         button:active { opacity: 0.7; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
-        
         button.primary { background-color: var(--accent-blue); color: white; }
         button.secondary { background-color: #3A3A3C; color: white; }
-        
         button.play-btn { background-color: var(--accent-green); color: white; }
         button.play-btn.zeroing { background-color: var(--accent-orange); color: white; }
         button.play-btn.measuring { background-color: var(--accent-red); color: white; }
 
-        .canvas-container {
-            width: 100%;
-            height: 120px;
-            position: relative;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #000;
-            border: 1px solid var(--divider);
-            margin-bottom: 16px;
-        }
+        .canvas-container { width: 100%; height: 120px; position: relative; border-radius: 10px; overflow: hidden; background: #000; border: 1px solid var(--divider); margin-bottom: 16px; }
         canvas { display: block; width: 100%; height: 100%; }
 
         .section-title { font-size: 13px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; margin: 20px 0 8px 8px; letter-spacing: 0.5px; }
@@ -120,32 +73,13 @@
         #status-bar { text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 10px; font-weight: 500; }
 
         /* --- MODAL CALIBRACIÓN iOS --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            z-index: 100; opacity: 0; visibility: hidden;
-            transition: opacity 0.3s ease;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 100; opacity: 0; visibility: hidden; transition: opacity 0.3s ease; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
-        
-        .modal-sheet {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background-color: var(--modal-bg);
-            border-radius: 20px 20px 0 0;
-            padding: 24px 20px env(safe-area-inset-bottom) 20px;
-            z-index: 101; transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1);
-            box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
-            max-height: 90vh; overflow-y: auto;
-        }
+        .modal-sheet { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--modal-bg); border-radius: 20px 20px 0 0; padding: 24px 20px env(safe-area-inset-bottom) 20px; z-index: 101; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1); box-shadow: 0 -10px 20px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
         .modal-sheet.active { transform: translateY(0); }
-        
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-title { font-size: 20px; font-weight: 600; }
         .btn-close { background: none; color: var(--accent-blue); font-size: 17px; padding: 0; flex: none; }
-        
         .sensor-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
         .sensor-box { background-color: #1C1C1E; border-radius: 12px; padding: 12px; text-align: center; }
         .sensor-box .axis { font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px; }
@@ -169,7 +103,6 @@
                 <div class="label">PICO MÁXIMO</div>
                 <div class="value peak" id="val-peak">0.00 <span class="unit">m/s²</span></div>
             </div>
-            
             <div class="kpi-sub" id="v0-container" style="display: none;">
                 <div class="label">V. INICIAL ESTIMADA</div>
                 <div class="value speed" id="val-speed">0 <span class="unit">km/h</span></div>
@@ -178,7 +111,7 @@
     </div>
 
     <div class="toggle-row">
-        <span class="toggle-label">Estimar V. Inicial por Integración</span>
+        <span class="toggle-label">Estimar V. Inicial</span>
         <label class="toggle-switch">
             <input type="checkbox" id="toggle-speed">
             <span class="slider"></span>
@@ -195,7 +128,7 @@
 
     <div class="button-group">
         <button id="btn-init" class="primary">Iniciar Sensores</button>
-        <button id="btn-open-cal" class="secondary" style="display:none;">🛠 Panel de Calibración</button>
+        <button id="btn-open-cal" class="secondary" style="display:none;">🛠 Panel de Diagnóstico</button>
     </div>
 
     <div class="section-title">Pruebas Guardadas (Max 3)</div>
@@ -204,39 +137,46 @@
             Ninguna prueba grabada.
         </div>
     </div>
-    
     <div id="status-bar">Esperando inicio...</div>
 
     <!-- MODAL CALIBRACIÓN Y DIAGNÓSTICO -->
     <div class="modal-overlay" id="cal-overlay"></div>
     <div class="modal-sheet" id="cal-sheet">
         <div class="modal-header">
-            <div class="modal-title">Telemetría Raw</div>
+            <div class="modal-title">Telemetría RAW (Verificación)</div>
             <button class="btn-close" id="btn-close-cal">Cerrar</button>
         </div>
         
-        <div class="section-title" style="margin-left: 0; margin-top: 0;">Acelerómetro (m/s²)</div>
+        <!-- NUEVO BLOQUE: GRAVEDAD PURA PARA EL TEST DE LA PARED -->
+        <div class="section-title" style="margin-left: 0; margin-top: 0; color: var(--accent-orange);">1. Gravedad / Absoluto (m/s²)</div>
+        <div class="sensor-grid">
+            <div class="sensor-box"><div class="axis">Eje X (Lat)</div><div class="val" id="raw-grav-x">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Eje Y (Long)</div><div class="val" id="raw-grav-y">0.00</div></div>
+            <div class="sensor-box"><div class="axis">Eje Z (Vert)</div><div class="val" id="raw-grav-z">0.00</div></div>
+        </div>
+
+        <div class="section-title" style="margin-left: 0;">2. Acel. Lineal Pura (m/s²)</div>
         <div class="sensor-grid">
             <div class="sensor-box"><div class="axis">Eje X (Lat)</div><div class="val" id="raw-accel-x">0.00</div></div>
             <div class="sensor-box"><div class="axis">Eje Y (Long)</div><div class="val" id="raw-accel-y">0.00</div></div>
             <div class="sensor-box"><div class="axis">Eje Z (Vert)</div><div class="val" id="raw-accel-z">0.00</div></div>
         </div>
 
-        <div class="section-title" style="margin-left: 0;">Giroscopio (°/s)</div>
+        <div class="section-title" style="margin-left: 0;">3. Giroscopio (°/s)</div>
         <div class="sensor-grid">
             <div class="sensor-box"><div class="axis">Rot X (Beta)</div><div class="val" id="raw-gyro-b">0.00</div></div>
             <div class="sensor-box"><div class="axis">Rot Y (Gamma)</div><div class="val" id="raw-gyro-g">0.00</div></div>
             <div class="sensor-box"><div class="axis">Rot Z (Alpha)</div><div class="val" id="raw-gyro-a">0.00</div></div>
         </div>
 
-        <div class="section-title" style="margin-left: 0;">Orientación Absoluta (°)</div>
+        <div class="section-title" style="margin-left: 0;">4. Orientación (°)</div>
         <div class="sensor-grid">
             <div class="sensor-box"><div class="axis">Pitch (Cabeceo)</div><div class="val" id="raw-orient-b">0.0</div></div>
             <div class="sensor-box"><div class="axis">Roll (Alabeo)</div><div class="val" id="raw-orient-g">0.0</div></div>
             <div class="sensor-box"><div class="axis">Yaw (Guiñada)</div><div class="val" id="raw-orient-a">0.0</div></div>
         </div>
 
-        <button id="btn-do-cal" class="primary" style="width: 100%; margin-top: 10px;">Establecer 0 Manual (Tarar Plano X-Y)</button>
+        <button id="btn-do-cal" class="primary" style="width: 100%; margin-top: 10px;">Forzar Cero Manual (Plano X-Y)</button>
     </div>
 
 <script>
@@ -244,7 +184,6 @@
     let isRecording = false;
     let isZeroing = false;
     
-    // Ahora guardamos la base de ambos ejes horizontales
     let baselineX = 0; 
     let baselineY = 0; 
     let isModalOpen = false;
@@ -290,6 +229,10 @@
     const btnCloseCal = document.getElementById('btn-close-cal');
     const btnDoCal = document.getElementById('btn-do-cal');
     
+    // Referencias DOM Modal
+    const domGravX = document.getElementById('raw-grav-x');
+    const domGravY = document.getElementById('raw-grav-y');
+    const domGravZ = document.getElementById('raw-grav-z');
     const domAccelX = document.getElementById('raw-accel-x');
     const domAccelY = document.getElementById('raw-accel-y');
     const domAccelZ = document.getElementById('raw-accel-z');
@@ -318,7 +261,6 @@
         v0Container.style.display = e.target.checked ? 'flex' : 'none';
     });
 
-    // Permisos y Sensores
     btnInit.addEventListener('click', async () => {
         let permissionsGranted = true;
         
@@ -388,14 +330,19 @@
         let dt = (currentTime - lastTime) / 1000; 
         lastTime = currentTime;
 
-        let accel = event.acceleration || event.accelerationIncludingGravity;
-        if (!accel) return;
-
+        // 1. Aceleración Pura (Para los cálculos de frenada)
+        let accel = event.acceleration || {x:0, y:0, z:0};
         let ax = accel.x || 0;
         let ay = accel.y || 0;
         let az = accel.z || 0;
         lastRawX = ax;
         lastRawY = ay;
+
+        // 2. Aceleración con Gravedad (Exclusivo para el Test de Verificación)
+        let grav = event.accelerationIncludingGravity || {x:0, y:0, z:0};
+        let gx = grav.x || 0;
+        let gy = grav.y || 0;
+        let gz = grav.z || 0;
 
         let gyro = event.rotationRate;
         let ga = gyro ? (gyro.alpha || 0) : 0;
@@ -403,22 +350,26 @@
         let gg = gyro ? (gyro.gamma || 0) : 0;
 
         if (isModalOpen) {
+            // Actualizamos Gravedad
+            domGravX.innerText = gx.toFixed(2);
+            domGravY.innerText = gy.toFixed(2);
+            domGravZ.innerText = gz.toFixed(2);
+            
+            // Actualizamos Lineal
             domAccelX.innerText = ax.toFixed(2);
             domAccelY.innerText = ay.toFixed(2);
             domAccelZ.innerText = az.toFixed(2);
+            
+            // Actualizamos Giroscopio
             domGyroA.innerText = ga.toFixed(1);
             domGyroB.innerText = gb.toFixed(1);
             domGyroG.innerText = gg.toFixed(1);
         }
         
-        // --- NUEVA LÓGICA: CÁLCULO OMNIDIRECCIONAL (PITÁGORAS EN 2D) ---
-        // Restamos el cero estático de ambos ejes
         let cx = ax - baselineX;
         let cy = ay - baselineY;
         
-        // Módulo del vector resultante en el plano X-Y
         let decelRaw_ms2 = Math.sqrt(cx * cx + cy * cy);
-        
         filteredDecel = alphaFilter * decelRaw_ms2 + (1 - alphaFilter) * filteredDecel;
         
         if (filteredDecel > sessionMaxPeak) sessionMaxPeak = filteredDecel;
@@ -448,7 +399,6 @@
             statusBar.innerText = 'Tarando el plano omnidireccional...';
             statusBar.style.color = 'var(--accent-orange)';
             
-            // Tarado automático de los dos ejes
             baselineX = lastRawX;
             baselineY = lastRawY;
             filteredDecel = 0;
@@ -570,7 +520,6 @@
             grad.addColorStop(0, 'rgba(10, 132, 255, 0.4)');
             grad.addColorStop(1, 'rgba(10, 132, 255, 0.0)');
         }
-        
         ctx.fillStyle = grad;
         ctx.fill();
 
